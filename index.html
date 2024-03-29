@@ -8,8 +8,20 @@
 </head>
 <body>
 
+
+<div class="overlay"></div>
 <canvas id="canvas"></canvas>
-<!--<button id="signChange" name = "signChange" onclick="changeSign()"> Electric Sign</button>-->
+<div class="buttons" id="buttons">
+    <button id="removeLastPoint" name="removeLastPoint" onclick="removePoint()">Remove Last Point</button>
+    <button id="signChange" name = "signChange" onclick="changeSign()"> Electric Sign</button>
+    <button id="chargeChange" name="chargeChange" onclick="chargeValue()">Charge Amount</button>
+    <input type="range" min="1" max="2000" value="500" class="slider" id="slider">
+    <span class="labelCharge" id="labelCharge">Charge: </span>
+    <span class="slideValue" id="slideValue">500</span>
+</div>
+
+
+
 
 <script src="main.js"></script>
 </body>

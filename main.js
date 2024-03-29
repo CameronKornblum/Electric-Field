@@ -1,12 +1,33 @@
+// html element implementation
+
 let canvasElement = document.getElementById('canvas');
 canvasElement.width = window.innerWidth;
 canvasElement.height = window.innerHeight;
 let ctx = canvasElement.getContext('2d');
-
-
+let slideValue = document.getElementById("slideValue");
+let slider = document.getElementById("slider");
+slider.oninput = function(){
+    slideValue.innerHTML = this.value;
+};
+window.onmousemove=(event)=>{
+    point.x = event.x;
+    point.y = event.y;
+};
+// button functions
+function chargeValue () {
+    charge = slider.value;
+}
+function changeSign(){
+    sign = sign * -1;
+    charge = charge * sign;
+}
+function removePoint(){
+    pointArray.splice(pointArray.length-1,1);
+}
+// initializing global variables
 let vectorArray = [];
 let pointArray = [];
-let gridLength = 40;
+let gridLength = 35;
 let gridArea = {
     x: canvasElement.width / gridLength,
     y: canvasElement.height / gridLength
@@ -18,16 +39,11 @@ let k = 2000;
 let color;
 let pointColor;
 
-
-const offset={
-    x:canvasElement.width / 2,
-    y:canvasElement.height / 2
-};
 let point = {
     x: 0,
     y: 0
 };
-
+// initializing classes
 class Point {
     constructor(x, y, size, color, charge, dx, dy) {
         this.x = x;
@@ -93,54 +109,36 @@ class Vector{
 
 }
 
-document.onmousemove=(event)=>{
-    point.x = event.x;
-    point.y = event.y;
-};
-function changeSign(){
-    sign = sign * -1;
-    charge = charge * sign;
-}
 
-window.addEventListener('click', function(){
-    if (sign === -1){
-        pointColor = 230;
+window.addEventListener('click', function(event){
+    const element = event.target;
+    if (element.tagName === 'CANVAS') {
+        if (Math.sign(charge) === -1) {
+            pointColor = 'hsl(' + "230" + "," + " " + "100%," + " " + "50%)";
+        }
+        else if (charge === 0){
+            pointColor = 'hsl(' + "0" + "," + " " + "0%," + " " + "75%)"
+        }
+        else {
+            pointColor = 'hsl(' + "0" + "," + " " + "100%," + " " + "50%)";
+        }
+
+        pointArray.push(new Point(point.x, point.y, 15, pointColor, charge, 0, 0));
+        update();
     }
-    else {
-        pointColor = 0;
-    }
-    pointColor = 'hsl(' + pointColor.toString() + "," + " " + "100%," +  " " + "50%)";
-    pointArray.push(new Point(point.x,point.y,15,pointColor,charge,0,0));
-    update();
 });
 
-function sumProperties(arr, props) {
-    return arr.reduce((acc, obj) => {
-        props.forEach(prop => {
-            acc[prop] = (acc[prop] || 0) + obj[prop];
-        });
-        return acc;
-    }, {});
-}
 
-/*function drawPoint(loc,size,color){
-    ctx.beginPath();
-    ctx.fillStyle = color;
-    ctx.arc(loc.x,loc.y,size/2,0,Math.PI*2);
-    ctx.fill();
-}*/
+// important function for updating simulation
 function update() {
-    vectorArray.pop();
+    let offset = gridLength/2;
+    vectorArray = [];
     let inc = [];
     let tip = {x: 0, y: 0};
     let tail = {x: 0, y: 0};
     let increase = {
         x: 0,
         y: 0
-    };
-    let offset = {
-        x: gridLength / 2,
-        y: gridLength / 2
     };
     let limit = 30;
     let color = 100;
@@ -155,7 +153,6 @@ function update() {
     let forcePolar;
     let forceArray = [];
     let propertiestoSum = ['x', 'y'];
-
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
     for (let j = 0; j < gridArea.y; j++) {
@@ -163,8 +160,8 @@ function update() {
             increase.x = i * gridLength;
             increase.y = j * gridLength;
             inc.push(increase);
-            tail.x = offset.x + inc[i].x;
-            tail.y = offset.y + inc[i].y;
+            tail.x = offset + inc[i].x;
+            tail.y = offset + inc[i].y;
 
                 for (let n = 0; n < pointArray.length; n++) {
                     polar = toPolar(subtract(tail, pointArray[n].coordinate()));
@@ -177,8 +174,8 @@ function update() {
                 eField = sumProperties(fieldArray, propertiestoSum);
                 fieldArray = [];
 
-                tip.x = inc[i].x + eField.x + offset.x;
-                tip.y = inc[i].y + eField.y + offset.y;
+                tip.x = inc[i].x + eField.x + offset;
+                tip.y = inc[i].y + eField.y + offset;
                 polar = toPolar(subtract(tip, tail));
                 XY = toXY(polar);
                 if (polar.mag > 290) {
@@ -189,8 +186,8 @@ function update() {
                 if (polar.mag > limit) {
                     polar.mag = limit;
                     XY = toXY(polar);
-                    tip.x = XY.x + inc[i].x + offset.x;
-                    tip.y = XY.y + inc[i].y + offset.y;
+                    tip.x = XY.x + inc[i].x + offset;
+                    tip.y = XY.y + inc[i].y + offset;
                 }
 
                 let colorArray = 'hsl(' + color.toString() + "," + " " + "100%," + " " + "50%)";
@@ -206,17 +203,22 @@ function update() {
                 }
                 else {
                     forcePolar = toPolar(subtract(pointArray[m].coordinate(), pointArray[n].coordinate()));
-                    eForce = {
-                        x: Math.cos(forcePolar.dir) * ((pointArray[m].charge * pointArray[n].charge) / Math.pow(forcePolar.mag, 2)) ,
-                        y: Math.sin(forcePolar.dir) * ((pointArray[m].charge * pointArray[n].charge) / Math.pow(forcePolar.mag, 2))
-                    };
-                    console.log(eForce);
-                    forceArray.push(eForce);
+                    if ((forcePolar.mag < (pointArray[m].size * 5)) && (Math.sign(pointArray[n].charge) !== Math.sign(pointArray[m].charge))){
+                        pointArray[n] = new Point(pointArray[n].coordinate().x,pointArray[n].coordinate().y,20,"darkgray",0,0,0);
+                        pointArray.splice(m,1);
+                    }
+                        else
+                    {
+                        eForce = {
+                            x: Math.cos(forcePolar.dir) * ((pointArray[m].charge * pointArray[n].charge) / Math.pow(forcePolar.mag, 2)),
+                            y: Math.sin(forcePolar.dir) * ((pointArray[m].charge * pointArray[n].charge) / Math.pow(forcePolar.mag, 2))
+                        };
+                        forceArray.push(eForce);
+                    }
                 }
 
             }
             eForce = sumProperties(forceArray, propertiestoSum);
-            console.log(eForce);
             pointArray[m].dx = eForce.x;
             pointArray[m].dy = eForce.y;
             forceArray = [];
@@ -227,7 +229,7 @@ function update() {
     }
 }
 
-
+// arithmetic functions
 function toPolar ({x,y}){
     return {
         mag: magnitude({x,y}),
@@ -258,9 +260,16 @@ function subtract(p1,p2){
         x:p1.x - p2.x,
         y:p1.y - p2.y
     };
-
-
 }
+function sumProperties(arr, props) {
+    return arr.reduce((acc, obj) => {
+        props.forEach(prop => {
+            acc[prop] = (acc[prop] || 0) + obj[prop];
+        });
+        return acc;
+    }, {});
+}
+
 function init() {
     let inc = [];
     let tip = {x:0,y:0};
@@ -287,6 +296,7 @@ function init() {
         }
     }
 }
+//initializing simulation
 function animate(){
     requestAnimationFrame(animate);
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
